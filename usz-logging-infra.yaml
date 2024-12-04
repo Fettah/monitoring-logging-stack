@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: usz-logging-and-monitoring
+  namespace: argocd
+spec:
+  destination:
+    namespace: argocd
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: infra/
+    repoURL: https://github.com/Fettah/monitoring-logging-stack/
+    targetRevision: main
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
