@@ -7,5 +7,4 @@ resources:
   - loki/application.yaml
   - prometheus-node-exporter/application.yaml
   - grafana/dashboards/argo-cd.yaml
-  - secrets/sealed-secret.yaml
-  # - sealed-secrets/application.yaml
+  - sealed-secrets/application.yaml
