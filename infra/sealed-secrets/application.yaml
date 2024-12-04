@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sealed-secrets
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://bitnami-labs.github.io/sealed-secrets
+    targetRevision: 2.16.0
+    chart: sealed-secrets
+    helm:
+      parameters:
+        - name: namespace
+          value: sealed-secrets
+        - name: createCustomResource
+          value: 'true'
+        - name: installCRDs
+          value: 'true'
+  destination:
+    namespace: sealed-secrets
+    name: in-cluster
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true

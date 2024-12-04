@@ -1,0 +1,72 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '3'
+  labels:
+    release: kube-prometheus-stack
+spec:
+  destination:
+    name: in-cluster
+    namespace: argocd
+  project: default
+  source:
+    repoURL: 'https://prometheus-community.github.io/helm-charts'
+    targetRevision: 45.6.0
+    helm:
+      skipCrds: true
+      values: |-
+        alertmanager:
+          enabled: true
+          config:
+            global:
+              resolve_timeout: 5m
+            route:
+              group_by:
+                - severity
+                - instance
+              group_wait: 30s
+              group_interval: 5m
+              repeat_interval: 1m
+              receiver: slack-notifications
+              routes:
+              - receiver: slack-notifications
+                match:
+                  severity: critical
+            receivers:
+            - name: slack-notifications
+              slack_configs:
+              - channel: '#alert-manager-test'
+                send_resolved: true
+                api_url: 'http://slack-webhook-secret/api_url'
+                text: "{{ range .Alerts }}<!channel> {{ .Annotations.summary }}\n{{ .Annotations.description }}\n{{ end }}"
+        additionalPrometheusRules:
+        - name: "kube-prometheus-stack-highcpuusage"
+          groups:
+            - name: "cpu-alerts"
+              rules:
+                - alert: HighCPUUsage
+                  expr: 100 - avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance) > 40
+                  for: 30s
+                  labels:
+                    severity: critical
+                  annotations:
+                    summary: "CPU usage is above 40% for 30 seconds"
+                    description: "CPU usage for instance {{ $labels.instance }} has exceeded 40% for more than 30 seconds."
+        grafana:
+          datasources:
+            datasources.yaml:
+              apiVersion: 1
+              datasources:
+              - name: Loki
+                type: loki
+                url: http://loki.argocd.svc.cluster.local:3100
+                access: proxy
+                isDefault: false
+    chart: kube-prometheus-stack
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
