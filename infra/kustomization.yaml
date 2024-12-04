@@ -8,3 +8,4 @@ resources:
   - prometheus-node-exporter/application.yaml
   - grafana/dashboards/argo-cd.yaml
   - sealed-secrets/application.yaml
+  - velero/application.yaml
