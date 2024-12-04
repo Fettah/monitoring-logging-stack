@@ -17,6 +17,10 @@ spec:
     targetRevision: 4.42.0
     helm:
       values: |-
+        image:
+          registry: quay.io
+          repository: prometheus/node-exporter
+          tag: v1.5.0 # double check correct version
         hostRootFsMount:
           enabled: false
         service:

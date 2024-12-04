@@ -55,7 +55,51 @@ spec:
                   annotations:
                     summary: "CPU usage is above 40% for 30 seconds"
                     description: "CPU usage for instance {{ $labels.instance }} has exceeded 40% for more than 30 seconds."
+        alertmanager:
+          image:
+            registry: quay.io
+            repository: prometheus/alertmanager
+            tag: v0.27.0
+
         grafana:
+          image:
+            repository: docker.io/grafana/grafana
+            tag: 9.3.8
+            pullPolicy: IfNotPresent
+          datasources:
+            datasources.yaml:
+              apiVersion: 1
+              datasources:
+              - name: Loki
+                type: loki
+                url: http://loki.argocd.svc.cluster.local:3100
+                access: proxy
+                isDefault: false
+
+        prometheus:
+          prometheusSpec:
+            image:
+              registry: quay.io
+              repository: prometheus/prometheus
+              tag: v2.55.1
+
+          prometheusConfigReloader:
+            image:
+              registry: quay.io
+              repository: prometheus-operator/prometheus-config-reloader
+              tag: v0.63.0
+
+        prometheusOperator:
+          image:
+            registry: quay.io
+            repository: prometheus-operator/prometheus-operator
+            tag: v0.63.0
+          prometheusConfigReloader:
+            image:
+              registry: quay.io
+              repository: prometheus-operator/prometheus-config-reloader
+              tag: v0.63.0
+
           datasources:
             datasources.yaml:
               apiVersion: 1
