@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rabbitmq
+  namespace: argocd
+spec:
+  project: default
+  source:
+    chart: rabbitmq
+    repoURL: registry-1.docker.io/bitnamicharts
+    targetRevision: 15.1.0
+    helm:
+      values: |-
+        image:
+          registry: docker.io
+          repository: bitnami/rabbitmq
+          tag: 4.0.4-debian-12-r1
+
+  destination:
+    namespace: rabbitmq
+    name: in-cluster
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
