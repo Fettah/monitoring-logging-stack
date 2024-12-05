@@ -12,4 +12,5 @@ resources:
   - sealed-secrets/application.yaml
   # Backup
   - velero/application.yaml
-  - velero/backup-argocd.yaml
+  # - velero/backup-argocd.yaml
+  - minio/application.yaml

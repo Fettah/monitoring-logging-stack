@@ -33,16 +33,9 @@ spec:
     chart: velero
     helm:
       values: |-
-        configuration:
-          provider: hostPath
-          backupStorageLocation:
-            name: default
-            config:
-              path: /tmp/velero
-          volumeSnapshotLocation:
-            name: default
-            config:
-              path: /tmp/velero/snapshots
+        image:
+          repository: velero/velero
+          tag: v1.15.0 # Confirm the correct version
   syncPolicy:
     automated:
       prune: true
