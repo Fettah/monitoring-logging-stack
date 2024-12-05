@@ -13,4 +13,4 @@ resources:
   # Backup
   - velero/application.yaml
   # - velero/backup-argocd.yaml
-  - minio/application.yaml
+  # - minio/application.yaml
