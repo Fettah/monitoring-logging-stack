@@ -36,7 +36,42 @@ spec:
         image:
           repository: velero/velero
           tag: v1.15.0 # Confirm the correct version
+        configuration:
+          provider: aws
+          backupStorageLocation:
+            - name: default
+              provider: minio
+              objectStorage:
+                bucket: velero-backups # Name of your MinIO bucket
+                prefix: backups
+              config:
+                insecure: true
+                s3Url: http://minio.minio-operator.svc.cluster.local:9000 # MinIO service URL
+          volumeSnapshotLocation:
+            - name: default
+              provider: aws
+              config:
+                region: us-east-1
+                s3Url: http://minio.minio-operator.svc.cluster.local:9000
+                insecure: true
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+---
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: default
+  namespace: velero
+  annotations:
+    argocd.argoproj.io/sync-wave: '3'
+spec:
+  provider: minio
+  objectStorage:
+    bucket: velero-backups
+    prefix: backup
+# kubectl create secret generic minio-credentials \
+#   --from-literal=accesskey=accesskey \
+#   --from-literal=secretkey=secretkey \
+#   -n velero
