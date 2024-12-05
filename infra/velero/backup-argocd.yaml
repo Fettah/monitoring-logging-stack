@@ -1,0 +1,13 @@
+apiVersion: velero.io/v1
+kind: BackupSchedule
+metadata:
+  name: argocd-backup-schedule
+  namespace: velero
+spec:
+  schedule: '0 * * * *' # Cron expression for every hour
+  retention: 72h # Retain backups for 72 hours (optional)
+  backup:
+    name: 'argocd-backup'
+    includedNamespaces:
+      - argocd
+    storageLocation: default # Use default backup storage location or specify another
