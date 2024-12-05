@@ -35,26 +35,7 @@ spec:
       values: |-
         image:
           repository: velero/velero
-          tag: v1.15.0 # Confirm the correct version
-        configuration:
-          provider: aws
-          backupStorageLocation:
-            name: "aws"
-            provider: "velero.io/aws"
-            bucket: velero-usz-backup-k8s-demo
-            default: true
-            config:
-              region: eu-central-1
-          volumeSnapshotLocation:
-            name: aws
-            provider: velero.io/aws
-            credential:
-              name: usz-velero-backup-secret
-              key: accessKeyID
-            config:
-              region: eu-central-1
-                insecure: false
-
+          tag: v1.15.0
   syncPolicy:
     automated:
       prune: true
