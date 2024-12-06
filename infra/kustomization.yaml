@@ -12,6 +12,7 @@ resources:
   - sealed-secrets/application.yaml
   # queue
   - rabbit-mq/application.yaml
+  - https://raw.githubusercontent.com/argoproj/argo-cd/v2.13.1/manifests/core-install.yaml
   # Backup
   # - velero/application.yaml
   # - velero/backup-argocd.yaml
