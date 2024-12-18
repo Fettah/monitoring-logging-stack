@@ -6,9 +6,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://grafana.github.io/helm-charts
-    chart: loki-stack
-    targetRevision: 2.10.2
+    repoURL: https://registry-1.docker.io/bitnamicharts # https://grafana.github.io/helm-charts
+    chart: grafana-loki
+    targetRevision: 4.7.0
   destination:
     name: in-cluster
     namespace: argocd
