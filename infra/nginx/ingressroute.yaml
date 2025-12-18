@@ -9,6 +9,6 @@ spec:
     - match: Host(`localhost`)
       kind: Rule
       services:
-        - name: nginx
+        - name: nginx.nginx
           port: 80
   tls: {}
