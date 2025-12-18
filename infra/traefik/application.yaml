@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: traefik
-  namespace: argocd
+  namespace: argocd # somehow this has to be argocd for the apps to be displayed in the ui
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
