@@ -13,13 +13,10 @@ spec:
     - chart: traefik
       repoURL: https://helm.traefik.io/traefik
       targetRevision: '27.0.2' # https://github.com/traefik/traefik-helm-chart/blob/v27.0.2/traefik/values.yaml
-      helm:
-        values: |
-          providers:
-            kubernetesCRD:
-              namespaces:
-                - traefik
-                - nginx
+      # helm:
+      #   valueFiles:
+      #     - $base/resources/traefik/values/base/values.yaml
+      #     - $base/resources/traefik/values/dsps/values.yaml
     # - repoURL: https://gitlab.com/mobivia/atu/operations/argocd-ng.git
     #   targetRevision: main
     #   ref: base
