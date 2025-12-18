@@ -3,16 +3,17 @@ kind: Kustomization
 
 resources:
   # Logging & Monitoring
-  - prometheus-operator-crds/application.yaml
-  - prometheus/application.yaml
-  - loki/application.yaml
-  - prometheus-node-exporter/application.yaml
-  - grafana/dashboards/argo-cd.yaml
+  # - prometheus-operator-crds/application.yaml
+  # - prometheus/application.yaml
+  # - loki/application.yaml
+  # - prometheus-node-exporter/application.yaml
+  # - grafana/dashboards/argo-cd.yaml
   # Secrets
-  - sealed-secrets/application.yaml
+  # - sealed-secrets/application.yaml
   # queue
-  - rabbit-mq/application.yaml
+  # - rabbit-mq/application.yaml
   # Backup
   # - velero/application.yaml
   # - velero/backup-argocd.yaml
   # - minio/application.yaml
+  - traefik/application.yaml
