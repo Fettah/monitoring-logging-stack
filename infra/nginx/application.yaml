@@ -2,11 +2,11 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: nginx
-  namespace: argocd
+  namespace: nginx
 spec:
   project: default
   source:
-    path: nginx
+    path: infra/nginx
     repoURL: https://github.com/Fettah/monitoring-logging-stack
     targetRevision: main
   destination:
