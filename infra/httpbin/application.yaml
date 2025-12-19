@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: httpbin
+  namespace: argocd # This needs to be argocd for the app to show in the UI
+spec:
+  project: default
+  source:
+    path: infra/httpbin
+    repoURL: https://github.com/Fettah/monitoring-logging-stack
+    targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: httpbin
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -18,3 +18,4 @@ resources:
   # - minio/application.yaml
   - traefik/application.yaml
   - nginx/application.yaml
+  - httpbin/application.yaml

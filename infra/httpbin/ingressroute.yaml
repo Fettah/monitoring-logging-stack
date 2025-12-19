@@ -1,0 +1,15 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: httpbin
+  namespace: httpbin
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`httpbin.local`) || PathPrefix(`/httpbin`)
+      kind: Rule
+      services:
+        - name: httpbin
+          port: 80
+  tls: {}
