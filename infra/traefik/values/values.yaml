@@ -90,11 +90,15 @@ providers:
   kubernetesCRD:
     enabled: true
     allowCrossNamespace: true
+    nativeLBByDefault: false
   kubernetesIngress:
     enabled: true
     ingressClass: traefik
     publishedService:
       enabled: true
+    nativeLBByDefault: false
+  kubernetesGateway:
+    enabled: false
 
 # Dashboard IngressRoute
 ingressRoute:
