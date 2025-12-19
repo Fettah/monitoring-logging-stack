@@ -18,10 +18,12 @@ deployment:
   kind: DaemonSet
 
 # Update strategy for DaemonSet
+# Note: For DaemonSets, maxSurge cannot be set when maxUnavailable > 0
 updateStrategy:
+  type: RollingUpdate
   rollingUpdate:
     maxUnavailable: 1
-    # Note: maxSurge is not valid for DaemonSet in Kubernetes
+    maxSurge: 0
 
 # Priority class (commented for local - doesn't exist in Kind)
 # priorityClassName: ops-node-critical
