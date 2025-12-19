@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: atu-simulation
+  name: nginx
   namespace: argocd # somehow this has to be argocd for the apps to be displayed in the ui
 spec:
   project: default
