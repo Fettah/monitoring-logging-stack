@@ -7,10 +7,17 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: PathPrefix(`/httpbin`) || PathPrefix(`/httpbin/`) || Host(`httpbin.local`)
+    - match: PathPrefix(`/httpbin`) || PathPrefix(`/httpbin/`)
+      kind: Rule
+      middlewares:
+        - name: strip-httpbin-prefix
+      services:
+        - name: httpbin
+          port: 80
+          scheme: http
+    - match: Host(`httpbin.local`)
       kind: Rule
       services:
         - name: httpbin
           port: 80
           scheme: http
-  tls: {}
