@@ -1,0 +1,42 @@
+# Traefik Helm chart values override
+# Chart reference: https://github.com/traefik/traefik-helm-chart/blob/v27.0.2/traefik/values.yaml
+
+# Enable the dashboard
+ingressRoute:
+  dashboard:
+    enabled: true
+
+# Configure logging
+logs:
+  general:
+    level: INFO
+  access:
+    enabled: true
+
+# Configure entrypoints
+ports:
+  web:
+    port: 8000
+    exposedPort: 80
+    protocol: TCP
+  websecure:
+    port: 8443
+    exposedPort: 443
+    protocol: TCP
+
+# Enable Traefik CRD provider (IngressRoute, Middleware, etc.)
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true
+  kubernetesIngress:
+    enabled: true
+
+# Resource limits
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi
