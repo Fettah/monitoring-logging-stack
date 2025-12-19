@@ -12,4 +12,5 @@ spec:
       services:
         - name: httpbin
           port: 80
+          scheme: http
   tls: {}
