@@ -11,6 +11,9 @@
 image:
   registry: docker.io
   repository: traefik
+  # NOTE: v3.4.0+ has a bug where CRD provider doesn't load IngressRoutes
+  # See: https://github.com/traefik/traefik/issues/11997
+  # Using v3.6.5 with standard Kubernetes Ingress instead of IngressRoutes
   tag: v3.6.5
 
 # Deployment configuration

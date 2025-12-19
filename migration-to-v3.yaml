@@ -14,7 +14,10 @@
 image:
   registry: 024848447968.dkr.ecr.eu-central-1.amazonaws.com/ecr-public/docker/library
   repository: traefik
-  tag: v3.6.5
+  # NOTE: v3.4.0+ has a bug where CRD provider doesn't load IngressRoutes
+  # See: https://github.com/traefik/traefik/issues/11997
+  # Use v3.3.6 until the bug is fixed. Monitor the issue for updates.
+  tag: v3.3.6
 
 deployment:
   kind: DaemonSet
