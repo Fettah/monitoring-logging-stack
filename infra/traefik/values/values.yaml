@@ -13,17 +13,20 @@ image:
   repository: traefik
   tag: v3.2.3
 
-# Deploy as DaemonSet (same as production)
+# Deployment configuration
+# Production uses DaemonSet, but for local Kind (single node) Deployment works fine
+# Note: The Helm chart has a bug where it renders both maxSurge and maxUnavailable
+# for DaemonSets, which Kubernetes rejects. Use Deployment for local testing.
 deployment:
-  kind: DaemonSet
+  kind: Deployment
+  # Production: kind: DaemonSet
 
-# Update strategy for DaemonSet
-# Note: For DaemonSets, maxSurge cannot be set when maxUnavailable > 0
+# Update strategy
 updateStrategy:
   type: RollingUpdate
   rollingUpdate:
-    maxUnavailable: 1
-    maxSurge: 0
+    maxUnavailable: 0
+    maxSurge: 1
 
 # Priority class (commented for local - doesn't exist in Kind)
 # priorityClassName: ops-node-critical
