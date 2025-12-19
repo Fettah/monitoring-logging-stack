@@ -7,7 +7,15 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: PathPrefix(`/nginx`) || PathPrefix(`/nginx/`) || Host(`nginx.local`)
+    - match: PathPrefix(`/nginx`) || PathPrefix(`/nginx/`)
+      kind: Rule
+      middlewares:
+        - name: strip-nginx-prefix
+      services:
+        - name: nginx
+          port: 80
+          scheme: http
+    - match: Host(`nginx.local`)
       kind: Rule
       services:
         - name: nginx
