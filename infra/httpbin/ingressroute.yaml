@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: PathPrefix(`/httpbin`)
+    - match: PathPrefix(`/httpbin`) || PathPrefix(`/httpbin/`) || Host(`httpbin.local`)
       kind: Rule
       services:
         - name: httpbin
