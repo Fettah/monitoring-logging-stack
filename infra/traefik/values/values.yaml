@@ -11,7 +11,7 @@
 image:
   registry: docker.io
   repository: traefik
-  tag: v3.2.3
+  tag: v3.6.5
 
 # Deployment configuration
 # Production uses DaemonSet, but for local Kind (single node) Deployment works fine

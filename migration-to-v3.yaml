@@ -1,0 +1,114 @@
+# Traefik Helm Chart Values - Migrated for v3 (chart v33.2.1)
+#
+# Changes from v2:
+# 1. experimental.kubernetesGateway -> gateway (moved to top level)
+# 2. ingressClass.fallbackApiVersion removed (deprecated in v3)
+# 3. Added core.defaultRuleSyntax: v2 for backward compatibility
+# 4. Added updateStrategy.type: RollingUpdate explicitly
+#
+# IMPORTANT: Also update all IngressRoutes/Middlewares from:
+#   apiVersion: traefik.containo.us/v1alpha1
+# to:
+#   apiVersion: traefik.io/v1alpha1
+
+image:
+  registry: 024848447968.dkr.ecr.eu-central-1.amazonaws.com/ecr-public/docker/library
+  repository: traefik
+  tag: v3.6.5
+
+deployment:
+  kind: DaemonSet
+
+# Zero-downtime strategy: create new pod first, then kill old pod
+# This ensures traffic is always served during upgrades
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
+
+priorityClassName: ops-node-critical
+
+ports:
+  web:
+    nodePort: 30080
+    proxyProtocol:
+      trustedIPs:
+        - "10.249.0.0/21"
+        - "10.115.0.0/20"
+        - "172.31.43.10/32"
+  websecure:
+    nodePort: 30443
+    proxyProtocol:
+      trustedIPs:
+        - "10.249.0.0/21"
+        - "10.115.0.0/20"
+        - "172.31.43.10/32"
+
+logs:
+  general:
+    level: INFO
+  access:
+    enabled: true
+    format: json
+    fields:
+      headers:
+        defaultmode: keep
+
+metrics:
+  datadog: {}
+
+# CHANGED: Moved from experimental.kubernetesGateway to gateway (top level in v3)
+gateway:
+  enabled: false
+
+ingressClass:
+  enabled: true
+  isDefaultClass: true
+  name: traefik
+  # REMOVED: fallbackApiVersion: v1 (deprecated in v3)
+
+providers:
+  kubernetesIngress:
+    ingressClass: traefik
+    publishedService:
+      enabled: true
+
+ingressRoute:
+  dashboard:
+    enabled: true
+    entryPoints: ["websecure"]
+
+service:
+  spec:
+    loadBalancerClass: service.k8s.aws/nlb
+    externalTrafficPolicy: Local
+  type: LoadBalancer
+  annotations:
+    dns-managed-by: external-dns-private
+    service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "30080"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "tcp"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/healthz"
+    service.beta.kubernetes.io/aws-load-balancer-type: external
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internal
+
+globalArguments:
+  - "--api.insecure=true"
+
+additionalArguments:
+  - "--providers.kubernetescrd.allowcrossnamespace=true"
+
+# ADDED: Backward compatibility for v2 router rule syntax
+# Remove this after migrating all IngressRoutes to v3 syntax
+core:
+  defaultRuleSyntax: v2
+
+affinity: {}
+
+resources:
+  limits:
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
