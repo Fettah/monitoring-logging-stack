@@ -1,0 +1,9 @@
+kind create cluster --name atu-playground --config kind-config.yaml
+
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# forward port
+
+kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' | base64 --decode && echo ""
+kubectl port-forward svc/argocd-server 4000:80 -n argocd
