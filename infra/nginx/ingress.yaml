@@ -3,15 +3,13 @@ kind: Ingress
 metadata:
   name: nginx
   namespace: nginx
-  annotations:
-    # Reference the StripPrefix middleware (middleware CRDs may still work)
-    traefik.ingress.kubernetes.io/router.middlewares: nginx-strip-nginx-prefix@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
     - http:
         paths:
-          - path: /nginx
+          # Serve nginx at root path (no stripping needed)
+          - path: /
             pathType: Prefix
             backend:
               service:

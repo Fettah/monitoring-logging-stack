@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: usz-logging-and-monitoring
+  name: atu-simulation
   namespace: argocd
 spec:
   destination:
@@ -16,3 +16,4 @@ spec:
     automated:
       prune: true
       selfHeal: true
+      enabled: true

@@ -3,15 +3,13 @@ kind: Ingress
 metadata:
   name: httpbin
   namespace: httpbin
-  annotations:
-    # Reference the StripPrefix middleware (middleware CRDs may still work)
-    traefik.ingress.kubernetes.io/router.middlewares: httpbin-strip-httpbin-prefix@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
-    - http:
+    - host: httpbin.local
+      http:
         paths:
-          - path: /httpbin
+          - path: /
             pathType: Prefix
             backend:
               service:
