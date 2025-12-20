@@ -28,9 +28,15 @@ spec:
             - name: RABBITMQ_PORT
               value: '15672'
             - name: RABBITMQ_USER
-              value: 'admin_user' # Default RabbitMQ user
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: rabbitmq-username
             - name: RABBITMQ_PASSWORD
-              value: '7140edb9e03b161bd324a6991b1247ef' # Default RabbitMQ password
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: rabbitmq-password
             - name: DEFINITIONS_PATH
               value: /definitions/definitions.json
             - name: READY_MAX_ATTEMPTS
