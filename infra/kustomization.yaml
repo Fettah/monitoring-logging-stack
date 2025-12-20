@@ -11,7 +11,7 @@ resources:
   # Secrets
   # - sealed-secrets/application.yaml
   # queue
-  # - rabbit-mq/application.yaml
+  - rabbit-mq/application.yaml
   # Backup
   # - velero/application.yaml
   # - velero/backup-argocd.yaml
