@@ -6,27 +6,34 @@ metadata:
 spec:
   project: default
   source:
-    chart: rabbitmq
-    repoURL: registry-1.docker.io/bitnamicharts
-    targetRevision: 15.1.0
+    path: infra/rabbit-mq
+    repoURL: https://github.com/Fettah/monitoring-logging-stack
+    targetRevision: main
+    kustomize:
+      nameSuffix: -dev
+      commonAnnotations:
+        argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
     helm:
-      values: |-
-        image:
-          registry: docker.io
-          repository: bitnamilegacy/rabbitmq
-          tag: 4.0.4-debian-12-r1
-
-        auth:
-          username: admin_user
-          existingPasswordSecret: rabbitmq-credentials
-          existingPasswordSecretPasswordKey: password
-
-        # Configure service for Traefik
-        service:
-          type: ClusterIP
-          ports:
-            http: 15672  # Management UI port
-          annotations: {}
+      releaseName: rabbitmq
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: 'auth.username'
+          value: admin_user
+        - name: 'auth.existingPasswordSecret'
+          value: rabbitmq-credentials
+        - name: 'auth.existingPasswordSecretPasswordKey'
+          value: password
+        - name: 'image.registry'
+          value: docker.io
+        - name: 'image.repository'
+          value: bitnamilegacy/rabbitmq
+        - name: 'image.tag'
+          value: 4.0.4-debian-12-r1
+        - name: 'service.type'
+          value: ClusterIP
+        - name: 'service.ports.http'
+          value: '15672'
 
   destination:
     namespace: rabbitmq
