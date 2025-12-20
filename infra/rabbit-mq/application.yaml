@@ -12,9 +12,9 @@ spec:
     helm:
       values: |-
         image:
-          registry: docker.io
-          repository: rabbitmq
-          tag: 4.0.4
+          registry: registry-1.docker.io
+          repository: bitnami/rabbitmq
+          tag: 4.2.2
 
         # Enable management plugin
         auth:
