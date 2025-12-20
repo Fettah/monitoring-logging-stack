@@ -1,0 +1,189 @@
+# infra/rabbit-mq/rabbitmq-apply-definitions-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rabbitmq-apply-definitions
+  namespace: rabbitmq
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+  labels:
+    app.kubernetes.io/name: rabbitmq-definitions
+    app.kubernetes.io/instance: rabbitmq
+spec:
+  backoffLimit: 5
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rabbitmq-definitions
+        app.kubernetes.io/instance: rabbitmq
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: apply-definitions
+          image: curlimages/curl:8.11.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ['ALL']
+          env:
+            - name: RABBITMQ_HOST
+              value: 'rabbitmq.rabbitmq.svc.cluster.local'
+            - name: RABBITMQ_PORT
+              value: '15672'
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: rabbitmq-username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: rabbitmq-password
+            - name: DEFINITIONS_PATH
+              value: /definitions/definitions.json
+            - name: READY_MAX_ATTEMPTS
+              value: '60' # 5 minutes with 5s interval
+            - name: READY_SLEEP_SECONDS
+              value: '5'
+            - name: APPLY_MAX_ATTEMPTS
+              value: '5'
+          volumeMounts:
+            - name: definitions
+              mountPath: /definitions
+              readOnly: true
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              set -euo pipefail
+
+              base_url="http://${RABBITMQ_HOST}:${RABBITMQ_PORT}"
+              auth="${RABBITMQ_USER}:${RABBITMQ_PASSWORD}"
+
+              log() { printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
+
+              # Wait for RabbitMQ Management API to be ready
+              log "Waiting for RabbitMQ Management API..."
+              i=1
+              while [ "$i" -le "$READY_MAX_ATTEMPTS" ]; do
+                code="$(curl -sS -u "$auth" -o /dev/null -w '%{http_code}' "${base_url}/api/overview" || true)"
+                [ "$code" = "200" ] && break
+                log "Attempt $i/$READY_MAX_ATTEMPTS: API not ready (HTTP $code), retrying in ${READY_SLEEP_SECONDS}s..."
+                sleep "$READY_SLEEP_SECONDS"
+                i=$((i+1))
+              done
+
+              if [ "$i" -gt "$READY_MAX_ATTEMPTS" ]; then
+                log "ERROR: Timed out waiting for RabbitMQ Management API"
+                exit 1
+              fi
+
+              # Apply definitions with retries
+              log "Applying RabbitMQ definitions..."
+              attempt=1
+              while [ "$attempt" -le "$APPLY_MAX_ATTEMPTS" ]; do
+                code="$(curl -sS -u "$auth" -o /tmp/resp.txt -w '%{http_code}' \
+                  -H 'Content-Type: application/json' \
+                  --data-binary @"$DEFINITIONS_PATH" \
+                  "${base_url}/api/definitions" || echo "000")"
+
+                if [ "$code" -ge 200 ] && [ "$code" -lt 300 ]; then
+                  log "Successfully applied RabbitMQ definitions"
+                  exit 0
+                fi
+
+                log "Attempt $attempt/$APPLY_MAX_ATTEMPTS failed with HTTP $code"
+                if [ "$attempt" -lt "$APPLY_MAX_ATTEMPTS" ]; then
+                  sleep $((attempt * 2))  # Exponential backoff
+                fi
+                attempt=$((attempt+1))
+              done
+
+              log "ERROR: Failed to apply RabbitMQ definitions after $APPLY_MAX_ATTEMPTS attempts"
+              if [ -f /tmp/resp.txt ]; then
+                log "Response from server:"
+                cat /tmp/resp.txt >&2
+              fi
+              exit 1
+
+      volumes:
+        - name: definitions
+          secret:
+            secretName: rabbitmq-definitions
+            defaultMode: 0400
+---
+# infra/rabbit-mq/rabbitmq-definitions-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-definitions
+  namespace: rabbitmq
+  labels:
+    app.kubernetes.io/name: rabbitmq-definitions
+    app.kubernetes.io/instance: rabbitmq
+type: Opaque
+stringData:
+  definitions.json: |
+    {
+      "vhosts": [
+        { "name": "/" }
+      ],
+      "users": [
+        {
+          "name": "admin_user",
+          "password": "",
+          "tags": "administrator"
+        }
+      ],
+      "permissions": [
+        {
+          "user": "admin_user",
+          "vhost": "/",
+          "configure": ".*",
+          "write": ".*",
+          "read": ".*"
+        }
+      ],
+      "exchanges": [
+        {
+          "vhost": "/",
+          "name": "orders.exchange",
+          "type": "topic",
+          "durable": true,
+          "auto_delete": false,
+          "internal": false,
+          "arguments": {}
+        }
+      ],
+      "queues": [
+        {
+          "vhost": "/",
+          "name": "orders.queue",
+          "durable": true,
+          "auto_delete": false,
+          "arguments": {
+            "x-dead-letter-exchange": "deadletter.exchange",
+            "x-dead-letter-routing-key": "orders.dlq"
+          }
+        }
+      ],
+      "bindings": [
+        {
+          "vhost": "/",
+          "source": "orders.exchange",
+          "destination": "orders.queue",
+          "destination_type": "queue",
+          "routing_key": "orders.*",
+          "arguments": {}
+        }
+      ]
+    }
