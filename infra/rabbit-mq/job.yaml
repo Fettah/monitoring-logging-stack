@@ -1,4 +1,4 @@
-# infra/rabbit-mq/rabbitmq-apply-definitions-job.yaml
+# infra/rabbit-mq/job.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -7,23 +7,12 @@ metadata:
   annotations:
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
-  labels:
-    app.kubernetes.io/name: rabbitmq-definitions
-    app.kubernetes.io/instance: rabbitmq
 spec:
   backoffLimit: 5
   activeDeadlineSeconds: 300
   template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: rabbitmq-definitions
-        app.kubernetes.io/instance: rabbitmq
     spec:
       restartPolicy: Never
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
       containers:
         - name: apply-definitions
           image: curlimages/curl:8.11.0
@@ -39,19 +28,13 @@ spec:
             - name: RABBITMQ_PORT
               value: '15672'
             - name: RABBITMQ_USER
-              valueFrom:
-                secretKeyRef:
-                  name: rabbitmq-credentials
-                  key: rabbitmq-username
+              value: 'guest' # Default RabbitMQ user
             - name: RABBITMQ_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: rabbitmq-credentials
-                  key: rabbitmq-password
+              value: 'guest' # Default RabbitMQ password
             - name: DEFINITIONS_PATH
               value: /definitions/definitions.json
             - name: READY_MAX_ATTEMPTS
-              value: '60' # 5 minutes with 5s interval
+              value: '60'
             - name: READY_SLEEP_SECONDS
               value: '5'
             - name: APPLY_MAX_ATTEMPTS
@@ -71,13 +54,33 @@ spec:
 
               log() { printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
 
+              # Test connection and authentication
+              test_connection() {
+                local url="$1"
+                log "Testing connection to ${url} with user: ${RABBITMQ_USER}"
+                local response
+                response=$(curl -v -sS -u "${auth}" -w "\n%{http_code}" "${url}" 2>&1)
+                local status_code=$(echo "$response" | tail -n1)
+                local output=$(echo "$response" | head -n -1)
+
+                log "Response status: $status_code"
+                log "Response body: $output"
+
+                if [ "$status_code" -eq 200 ] || [ "$status_code" -eq 201 ]; then
+                  return 0
+                fi
+                return 1
+              }
+
               # Wait for RabbitMQ Management API to be ready
-              log "Waiting for RabbitMQ Management API..."
+              log "Waiting for RabbitMQ Management API at ${base_url}/api/overview..."
               i=1
               while [ "$i" -le "$READY_MAX_ATTEMPTS" ]; do
-                code="$(curl -sS -u "$auth" -o /dev/null -w '%{http_code}' "${base_url}/api/overview" || true)"
-                [ "$code" = "200" ] && break
-                log "Attempt $i/$READY_MAX_ATTEMPTS: API not ready (HTTP $code), retrying in ${READY_SLEEP_SECONDS}s..."
+                if test_connection "${base_url}/api/overview"; then
+                  log "RabbitMQ Management API is ready"
+                  break
+                fi
+                log "Attempt $i/$READY_MAX_ATTEMPTS: API not ready, retrying in ${READY_SLEEP_SECONDS}s..."
                 sleep "$READY_SLEEP_SECONDS"
                 i=$((i+1))
               done
@@ -88,20 +91,35 @@ spec:
               fi
 
               # Apply definitions with retries
-              log "Applying RabbitMQ definitions..."
+              log "Applying RabbitMQ definitions from ${DEFINITIONS_PATH}..."
+              log "File content:"
+              cat "${DEFINITIONS_PATH}"
+
               attempt=1
               while [ "$attempt" -le "$APPLY_MAX_ATTEMPTS" ]; do
-                code="$(curl -sS -u "$auth" -o /tmp/resp.txt -w '%{http_code}' \
-                  -H 'Content-Type: application/json' \
-                  --data-binary @"$DEFINITIONS_PATH" \
-                  "${base_url}/api/definitions" || echo "000")"
+                log "Attempt $attempt/$APPLY_MAX_ATTEMPTS: Sending definitions to ${base_url}/api/definitions"
 
-                if [ "$code" -ge 200 ] && [ "$code" -lt 300 ]; then
+                response=$(curl -v -sS -u "${auth}" -X POST \
+                  -H 'Content-Type: application/json' \
+                  --data-binary @"${DEFINITIONS_PATH}" \
+                  -w "\n%{http_code}" \
+                  "${base_url}/api/definitions" 2>&1 || echo "CURL_ERROR")
+
+                if [ "$response" = "CURL_ERROR" ]; then
+                  log "Curl command failed"
+                  status_code="000"
+                else
+                  status_code=$(echo "$response" | tail -n1)
+                  response_body=$(echo "$response" | head -n -1)
+                  log "Response (HTTP $status_code): $response_body"
+                fi
+
+                if [ "$status_code" -ge 200 ] && [ "$status_code" -lt 300 ]; then
                   log "Successfully applied RabbitMQ definitions"
                   exit 0
                 fi
 
-                log "Attempt $attempt/$APPLY_MAX_ATTEMPTS failed with HTTP $code"
+                log "Attempt $attempt/$APPLY_MAX_ATTEMPTS failed with HTTP $status_code"
                 if [ "$attempt" -lt "$APPLY_MAX_ATTEMPTS" ]; then
                   sleep $((attempt * 2))  # Exponential backoff
                 fi
@@ -109,17 +127,13 @@ spec:
               done
 
               log "ERROR: Failed to apply RabbitMQ definitions after $APPLY_MAX_ATTEMPTS attempts"
-              if [ -f /tmp/resp.txt ]; then
-                log "Response from server:"
-                cat /tmp/resp.txt >&2
-              fi
               exit 1
 
       volumes:
         - name: definitions
           secret:
             secretName: rabbitmq-definitions
-            defaultMode: 0400
+            defaultMode: 0444
 ---
 # infra/rabbit-mq/rabbitmq-definitions-secret.yaml
 apiVersion: v1
