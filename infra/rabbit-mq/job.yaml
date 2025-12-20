@@ -28,9 +28,15 @@ spec:
             - name: RABBITMQ_PORT
               value: '15672'
             - name: RABBITMQ_USER
-              value: 'admin_user' # Default RabbitMQ user
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: rabbitmq-username
             - name: RABBITMQ_PASSWORD
-              value: '7140edb9e03b161bd324a6991b1247ef' # Default RabbitMQ password
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: rabbitmq-password
             - name: DEFINITIONS_PATH
               value: /definitions/definitions.json
             - name: READY_MAX_ATTEMPTS
@@ -134,70 +140,4 @@ spec:
           secret:
             secretName: rabbitmq-definitions
             defaultMode: 0444
----
-# infra/rabbit-mq/rabbitmq-definitions-secret.yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: rabbitmq-definitions
-  namespace: rabbitmq
-  labels:
-    app.kubernetes.io/name: rabbitmq-definitions
-    app.kubernetes.io/instance: rabbitmq
-type: Opaque
-stringData:
-  definitions.json: |
-    {
-      "vhosts": [
-        { "name": "/" }
-      ],
-      "users": [
-        {
-          "name": "admin_user",
-          "password": "",
-          "tags": "administrator"
-        }
-      ],
-      "permissions": [
-        {
-          "user": "admin_user",
-          "vhost": "/",
-          "configure": ".*",
-          "write": ".*",
-          "read": ".*"
-        }
-      ],
-      "exchanges": [
-        {
-          "vhost": "/",
-          "name": "orders.exchange",
-          "type": "topic",
-          "durable": true,
-          "auto_delete": false,
-          "internal": false,
-          "arguments": {}
-        }
-      ],
-      "queues": [
-        {
-          "vhost": "/",
-          "name": "orders.queue",
-          "durable": true,
-          "auto_delete": false,
-          "arguments": {
-            "x-dead-letter-exchange": "deadletter.exchange",
-            "x-dead-letter-routing-key": "orders.dlq"
-          }
-        }
-      ],
-      "bindings": [
-        {
-          "vhost": "/",
-          "source": "orders.exchange",
-          "destination": "orders.queue",
-          "destination_type": "queue",
-          "routing_key": "orders.*",
-          "arguments": {}
-        }
-      ]
-    }
+

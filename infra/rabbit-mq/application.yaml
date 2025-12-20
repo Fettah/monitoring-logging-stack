@@ -19,7 +19,7 @@ spec:
         auth:
           username: admin_user
           existingPasswordSecret: rabbitmq-credentials
-          existingPasswordSecretPasswordKey: password
+          existingPasswordSecretPasswordKey: rabbitmq-password
 
         # Configure service for Traefik
         service:

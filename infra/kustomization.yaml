@@ -13,6 +13,8 @@ resources:
   # queue
   - rabbit-mq/application.yaml
   - rabbit-mq/job.yaml
+  - rabbit-mq/rabbitmq-credentials.yaml
+  - rabbit-mq/rabbitmq-definitions.yaml
   # Backup
   # - velero/application.yaml
   # - velero/backup-argocd.yaml

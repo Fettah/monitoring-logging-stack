@@ -6,7 +6,7 @@ image:
 auth:
   username: admin_user
   existingPasswordSecret: rabbitmq-credentials
-  existingPasswordSecretPasswordKey: password
+  existingPasswordSecretPasswordKey: rabbitmq-password
 
 service:
   type: ClusterIP
