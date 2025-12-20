@@ -20,6 +20,8 @@ spec:
     namespace: rabbitmq
     name: in-cluster
   syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
     automated:
       prune: true
       selfHeal: true
