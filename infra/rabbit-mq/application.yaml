@@ -13,14 +13,30 @@ spec:
       values: |-
         image:
           registry: docker.io
-          repository: bitnamilegacy/rabbitmq
-          tag: 4.0.4-debian-12-r1
+          repository: bitnami/rabbitmq
+          tag: 3.13.0-debian-12-r0
 
-        # Enable management plugin
         auth:
           username: admin_user
           existingPasswordSecret: rabbitmq-credentials
           existingPasswordSecretPasswordKey: password
+
+        # Enable management plugin
+        containerPorts:
+          http: 15672
+
+        extraConfiguration: |-
+          management.load_definitions = /app/load_definition.json
+
+        extraVolumes:
+          - name: definitions
+            configMap:
+              name: rabbitmq-definitions
+
+        extraVolumeMounts:
+          - name: definitions
+            mountPath: /app/load_definition.json
+            subPath: definitions.json
 
         # Configure service for Traefik
         service:
