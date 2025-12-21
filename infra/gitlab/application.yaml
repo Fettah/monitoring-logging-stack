@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitlab
+  namespace: argocd
+spec:
+  project: default
+  source:
+    chart: gitlab
+    repoURL: https://charts.gitlab.io/
+    targetRevision: 7.7.0 # Pinning a recent compatible version (adjust if needed)
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    namespace: gitlab
+    name: in-cluster
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true

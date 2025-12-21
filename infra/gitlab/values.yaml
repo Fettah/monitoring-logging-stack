@@ -1,0 +1,59 @@
+# Minimal GitLab Configuration for local/personal cluster
+
+global:
+  edition: ce
+  hosts:
+    domain: gitlab.local
+    https: false # simple setup without certs for now
+
+  # Disable bundled monitoring since we have our own stack
+  prometheus:
+    enabled: false
+  grafana:
+    enabled: false
+
+# Disable Cert Manager (assume external or none for local)
+certmanager:
+  install: false
+
+# Disable Runner to save resources initially
+gitlab-runner:
+  install: false
+
+# Resource optimization for minimal footprint
+gitlab:
+  webservice:
+    minReplicas: 1
+    maxReplicas: 1
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 300m
+  sidekiq:
+    minReplicas: 1
+    maxReplicas: 1
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 300m
+  gitlab-shell:
+    minReplicas: 1
+    maxReplicas: 1
+
+registry:
+  enabled: false # Disable registry for now to save space
+
+# External services configuration (using bundled for now but minimal)
+postgresql:
+  image:
+    tag: 13.6.0
+redis:
+  master:
+    persistence:
+      size: 1Gi
+
+# NGINX Ingress Controller
+# (If using Traefik, we might want to disable this or configure it to verify)
+# Keeping enabled as GitLab implies it, but can be disabled if we use existing IngressClass
+nginx-ingress:
+  enabled: false # Assuming existing ingress controller (Traefik) or minimal setup
