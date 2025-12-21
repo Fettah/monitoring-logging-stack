@@ -6,6 +6,10 @@ global:
     domain: gitlab.local
     https: false # simple setup without certs for now
 
+  ingress:
+    configureCertmanager: false
+    class: traefik # Assuming traefik since it's in the repo, or "none" if we want to be safe
+
   # Disable bundled monitoring since we have our own stack
   prometheus:
     enabled: false
@@ -15,6 +19,10 @@ global:
 # Disable Cert Manager (assume external or none for local)
 certmanager:
   install: false
+
+# Satisfy chart validation (required even if install is false in some versions if ingress is enabled)
+certmanager-issuer:
+  email: "admin@gitlab.local"
 
 # Disable Runner to save resources initially
 gitlab-runner:

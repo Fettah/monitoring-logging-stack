@@ -22,3 +22,4 @@ resources:
   - traefik/application.yaml
   - nginx/application.yaml
   - httpbin/application.yaml
+  - gitlab/application.yaml
