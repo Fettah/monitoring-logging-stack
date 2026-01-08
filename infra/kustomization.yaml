@@ -19,7 +19,7 @@ resources:
   # - velero/application.yaml
   # - velero/backup-argocd.yaml
   # - minio/application.yaml
-  - traefik/application.yaml
+  # - traefik/application.yaml
   - nginx/application.yaml
   - httpbin/application.yaml
   - gitlab/application.yaml

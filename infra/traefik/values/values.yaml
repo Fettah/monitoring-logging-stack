@@ -14,7 +14,7 @@ image:
   # NOTE: v3.4.0+ has a bug where CRD provider doesn't load IngressRoutes
   # See: https://github.com/traefik/traefik/issues/11997
   # Using v3.6.5 with standard Kubernetes Ingress instead of IngressRoutes
-  tag: v2.11.2
+  tag: v2.10.6
 
 # Deployment configuration
 # Production uses DaemonSet, but for local Kind (single node) Deployment works fine
