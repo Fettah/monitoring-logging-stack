@@ -13,7 +13,7 @@ spec:
     # Helm chart source
     - chart: traefik
       repoURL: https://helm.traefik.io/traefik
-      targetRevision: '35.0.0' # https://github.com/traefik/traefik-helm-chart/blob/v35.0.0/traefik/values.yaml
+      targetRevision: '27.0.2' # https://github.com/traefik/traefik-helm-chart/blob/v35.0.0/traefik/values.yaml
       helm:
         valueFiles:
           - $values/infra/traefik/values/values.yaml
