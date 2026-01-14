@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: apply-definitions-job
+  name: apply-definitions-job-2
   namespace: rabbitmq
   annotations:
     argocd.argoproj.io/hook: PostSync
