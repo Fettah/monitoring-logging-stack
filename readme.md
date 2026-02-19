@@ -7,3 +7,8 @@ kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/st
 
 kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' | base64 --decode && echo ""
 kubectl port-forward svc/argocd-server 4000:80 -n argocd
+
+
+# traefik & nginx access through traefik
+kubectl port-forward svc/traefik 8080:80 -n traefik
+nginx access through traefik: http://nginx.local:8080

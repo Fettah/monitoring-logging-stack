@@ -1,71 +1,18 @@
-# Traefik Helm chart values override
-# Chart: v33.2.1 (Traefik v3.6.5)
-# Reference: https://github.com/traefik/traefik-helm-chart/blob/v33.2.1/traefik/values.yaml
-#
-# This configuration mirrors production setup but adapted for local Kind cluster.
-# Production uses: ECR registry, AWS NLB, proxy protocol
-# Local uses: Docker Hub, NodePort service
-
-# Image configuration
-# Production: 024848447968.dkr.ecr.eu-central-1.amazonaws.com/ecr-public/docker/library
 image:
-  registry: docker.io
-  repository: traefik
-  # NOTE: v3.4.0+ has a bug where CRD provider doesn't load IngressRoutes
-  # See: https://github.com/traefik/traefik/issues/11997
-  # Using v3.6.5 with standard Kubernetes Ingress instead of IngressRoutes
-  tag: v2.10.6
+  tag: "v3.3.6"
 
-# Deployment configuration
-# Production uses DaemonSet, but for local Kind (single node) Deployment works fine
-# Note: The Helm chart has a bug where it renders both maxSurge and maxUnavailable
-# for DaemonSets, which Kubernetes rejects. Use Deployment for local testing.
 deployment:
-  kind: Deployment
-  # Production: kind: DaemonSet
+  kind: DaemonSet
 
-# Update strategy
 updateStrategy:
-  type: RollingUpdate
   rollingUpdate:
-    maxUnavailable: 0
-    maxSurge: 1
+    maxUnavailable: 2
+    maxSurge: 0
 
-# Priority class (commented for local - doesn't exist in Kind)
-# priorityClassName: ops-node-critical
-
-# Entrypoints configuration
-ports:
-  web:
-    port: 8000
-    exposedPort: 80
-    expose:
-      default: true
-    nodePort: 30080
-    # Proxy protocol disabled for local (no NLB)
-    # Production:
-    # proxyProtocol:
-    #   trustedIPs:
-    #     - "10.249.0.0/21"
-    #     - "10.115.0.0/20"
-    #     - "172.31.43.10/32"
-  websecure:
-    port: 8443
-    exposedPort: 443
-    expose:
-      default: true
-    nodePort: 30443
-    # Proxy protocol disabled for local
-    # proxyProtocol:
-    #   trustedIPs:
-    #     - "10.249.0.0/21"
-    #     - "10.115.0.0/20"
-    #     - "172.31.43.10/32"
-
-# Logging configuration (same as production)
 logs:
   general:
     level: INFO
+    format: json
   access:
     enabled: true
     format: json
@@ -73,77 +20,42 @@ logs:
       headers:
         defaultmode: keep
 
-# Metrics - using Prometheus for local instead of Datadog
 metrics:
-  prometheus:
-    entryPoint: metrics
+  datadog: {}
 
-# Kubernetes Gateway API (disabled, same as production)
 gateway:
   enabled: false
 
-# Ingress class configuration (same as production)
+core:
+  defaultRuleSyntax: v2
+
 ingressClass:
   enabled: true
   isDefaultClass: true
   name: traefik
 
-# Providers configuration
 providers:
-  kubernetesCRD:
-    enabled: true
-    allowCrossNamespace: true
-    nativeLBByDefault: false
   kubernetesIngress:
-    enabled: true
     ingressClass: traefik
     publishedService:
       enabled: true
-    nativeLBByDefault: false
-  kubernetesGateway:
-    enabled: false
 
-# Dashboard IngressRoute
 ingressRoute:
   dashboard:
     enabled: true
-    # Using web for local (no TLS setup)
-    entryPoints: ['web']
+    entryPoints: ["websecure"]
 
-# Service configuration - adapted for local Kind
-service:
-  type: NodePort
-  # Production uses LoadBalancer with AWS NLB annotations:
-  # type: LoadBalancer
-  # spec:
-  #   loadBalancerClass: service.k8s.aws/nlb
-  #   externalTrafficPolicy: Local
-  # annotations:
-  #   dns-managed-by: external-dns-private
-  #   service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
-  #   service.beta.kubernetes.io/aws-load-balancer-type: external
-  #   service.beta.kubernetes.io/aws-load-balancer-scheme: internal
 
-# Global arguments
 globalArguments:
-  - '--api.insecure=true'
+  - "--api.insecure=true"
 
-# Additional arguments (same as production)
 additionalArguments:
-  - '--providers.kubernetescrd.allowcrossnamespace=true'
+  - "--providers.kubernetescrd.allowcrossnamespace=true"
 
-# Traefik v3 backward compatibility for v2 rule syntax
-# Remove this after migrating all IngressRoutes to v3 syntax
-core:
-  defaultRuleSyntax: v2
-
-# Resource limits (same as production)
+affinity: {}
 resources:
+  limits:
+    memory: 128Mi
   requests:
     cpu: 50m
     memory: 128Mi
-  limits:
-    memory: 128Mi
-
-# Affinity (none for local)
-affinity: {}
