@@ -1,7 +1,7 @@
 image:
   registry: docker.io
   repository: traefik
-  tag: "v3.6.8"
+  tag: "v3.3.6"
 
 deployment:
   kind: Deployment
@@ -71,8 +71,10 @@ ingressRoute:
 service:
   type: NodePort
 
-additionalArguments:
+globalArguments:
   - '--api.insecure=true'
+
+additionalArguments:
   - '--providers.kubernetescrd.allowcrossnamespace=true'
 
 core:
