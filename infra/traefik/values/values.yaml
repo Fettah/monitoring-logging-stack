@@ -1,7 +1,7 @@
 image:
   registry: docker.io
   repository: traefik
-  tag: "v3.3.6"
+  tag: "v3.6.8"
 
 deployment:
   kind: Deployment
@@ -71,11 +71,31 @@ ingressRoute:
 service:
   type: NodePort
 
-globalArguments:
-  - '--api.insecure=true'
-
 additionalArguments:
+  - '--api.insecure=true'
   - '--providers.kubernetescrd.allowcrossnamespace=true'
+
+extraObjects:
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: traefik-configmap-reader
+    rules:
+      - apiGroups: [""]
+        resources: ["configmaps"]
+        verbs: ["get", "list", "watch"]
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: traefik-configmap-reader-binding
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: traefik-configmap-reader
+    subjects:
+      - kind: ServiceAccount
+        name: traefik
+        namespace: traefik
 
 core:
   defaultRuleSyntax: v2
