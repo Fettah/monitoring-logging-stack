@@ -1,18 +1,35 @@
 image:
+  registry: docker.io
+  repository: traefik
   tag: "v3.3.6"
 
 deployment:
-  kind: DaemonSet
+  kind: Deployment
 
 updateStrategy:
+  type: RollingUpdate
   rollingUpdate:
-    maxUnavailable: 2
-    maxSurge: 0
+    maxUnavailable: 0
+    maxSurge: 1
+
+
+ports:
+  web:
+    port: 8000
+    exposedPort: 80
+    expose:
+      default: true
+    nodePort: 30080
+  websecure:
+    port: 8443
+    exposedPort: 443
+    expose:
+      default: true
+    nodePort: 30443
 
 logs:
   general:
     level: INFO
-    format: json
   access:
     enabled: true
     format: json
@@ -21,13 +38,11 @@ logs:
         defaultmode: keep
 
 metrics:
-  datadog: {}
+  prometheus:
+    entryPoint: metrics
 
 gateway:
   enabled: false
-
-core:
-  defaultRuleSyntax: v2
 
 ingressClass:
   enabled: true
@@ -35,27 +50,41 @@ ingressClass:
   name: traefik
 
 providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true
+    nativeLBByDefault: false
   kubernetesIngress:
+    enabled: true
     ingressClass: traefik
     publishedService:
       enabled: true
+    nativeLBByDefault: false
+  kubernetesGateway:
+    enabled: false
 
 ingressRoute:
   dashboard:
     enabled: true
-    entryPoints: ["websecure"]
+    entryPoints: ['web']
 
+service:
+  type: NodePort
 
 globalArguments:
-  - "--api.insecure=true"
+  - '--api.insecure=true'
 
 additionalArguments:
-  - "--providers.kubernetescrd.allowcrossnamespace=true"
+  - '--providers.kubernetescrd.allowcrossnamespace=true'
 
-affinity: {}
+core:
+  defaultRuleSyntax: v2
+
 resources:
-  limits:
-    memory: 128Mi
   requests:
     cpu: 50m
     memory: 128Mi
+  limits:
+    memory: 128Mi
+
+affinity: {}

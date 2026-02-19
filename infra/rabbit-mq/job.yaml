@@ -67,4 +67,3 @@ spec:
           secret:
             secretName: rabbitmq-definitions
             defaultMode: 0444
-
