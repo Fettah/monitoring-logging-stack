@@ -61,6 +61,11 @@ gateway:
   service:
     port: 80
 
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
 # ServiceMonitor for Prometheus scraping
 monitoring:
   serviceMonitor:
