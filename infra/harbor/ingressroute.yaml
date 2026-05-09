@@ -3,8 +3,6 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: harbor-tls
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
   namespace: harbor
 spec:
   secretName: harbor-tls-secret
@@ -21,8 +19,6 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: harbor
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
   namespace: harbor
 spec:
   entryPoints:
@@ -41,8 +37,6 @@ apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: redirect-to-https
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
   namespace: harbor
 spec:
   redirectScheme:
@@ -53,8 +47,6 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: harbor-http
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
   namespace: harbor
 spec:
   entryPoints:

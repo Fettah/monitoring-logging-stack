@@ -3,15 +3,12 @@ kind: Namespace
 metadata:
   name: minio-operator
   annotations:
-    argocd.argoproj.io/sync-wave: '1'
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: minio-operator
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: '2'
   labels:
     release: minio-operator
 spec:

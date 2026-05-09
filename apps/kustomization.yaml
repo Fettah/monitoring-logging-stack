@@ -9,6 +9,5 @@ resources:
   - minio.yaml
   - prometheus.yaml
   - prometheus-operator-crds.yaml
-  - rabbit-mq.yaml
   - sealed-secrets.yaml
   - cluster-config.yaml

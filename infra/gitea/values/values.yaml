@@ -59,6 +59,8 @@ postgresql-ha:
 
 postgresql:
   enabled: true
+  image:
+    tag: "latest"
   global:
     postgresql:
       auth:
@@ -81,6 +83,8 @@ redis-cluster:
 
 redis:
   enabled: true
+  image:
+    tag: "latest"
   architecture: standalone
   auth:
     enabled: false

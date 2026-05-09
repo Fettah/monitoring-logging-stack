@@ -3,7 +3,6 @@ kind: Namespace
 metadata:
   name: velero
   annotations:
-    argocd.argoproj.io/sync-wave: '1'
 ---
 # apiVersion: v1
 # kind: ServiceAccount
@@ -11,15 +10,12 @@ metadata:
 #   name: velero
 #   namespace: velero
 #   annotations:
-#     argocd.argoproj.io/sync-wave: '2'
 # ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: velero
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: '3'
   labels:
     release: velero
 spec:

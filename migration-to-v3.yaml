@@ -87,7 +87,6 @@ service:
     loadBalancerClass: service.k8s.aws/nlb
     externalTrafficPolicy: Local
   type: LoadBalancer
-  annotations:
     dns-managed-by: external-dns-private
     service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
     service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "30080"

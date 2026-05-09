@@ -3,8 +3,6 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: grafana-tls
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
   namespace: monitoring
 spec:
   secretName: grafana-tls-secret
@@ -21,8 +19,6 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: prometheus-tls
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
   namespace: monitoring
 spec:
   secretName: prometheus-tls-secret
@@ -39,8 +35,6 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: grafana
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
   namespace: monitoring
 spec:
   entryPoints:
@@ -60,8 +54,6 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: prometheus
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
   namespace: monitoring
 spec:
   entryPoints:
@@ -80,8 +72,6 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: alertmanager-tls
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
   namespace: monitoring
 spec:
   secretName: alertmanager-tls-secret
@@ -97,8 +87,6 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: alertmanager
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
   namespace: monitoring
 spec:
   entryPoints:

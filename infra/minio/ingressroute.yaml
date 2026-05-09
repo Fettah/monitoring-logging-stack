@@ -3,8 +3,6 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: minio-tls
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
   namespace: minio-operator
 spec:
   secretName: minio-tls-secret
@@ -21,8 +19,6 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: minio-console
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
   namespace: minio-operator
 spec:
   entryPoints:
@@ -41,8 +37,6 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: minio-api-tls
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
   namespace: minio-operator
 spec:
   secretName: minio-api-tls-secret
@@ -58,8 +52,6 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: minio-api
-  annotations:
-    argocd.argoproj.io/sync-wave: "5"
   namespace: minio-operator
 spec:
   entryPoints:
