@@ -2,7 +2,7 @@
 
 gitea:
   admin:
-    username: admin
+    username: gitea_admin
     # Change via SealedSecret after bootstrap — this is the initial value
     password: "Ch@ngeMe123!"
     email: "admin@gitea.local"
