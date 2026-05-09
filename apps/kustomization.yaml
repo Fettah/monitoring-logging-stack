@@ -10,4 +10,5 @@ resources:
   - prometheus.yaml
   - prometheus-operator-crds.yaml
   - sealed-secrets.yaml
+  - traefik.yaml
   - cluster-config.yaml
