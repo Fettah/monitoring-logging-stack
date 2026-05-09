@@ -26,6 +26,14 @@ ports:
     expose:
       default: true
     nodePort: 30443
+  # SSH passthrough for Gitea
+  ssh:
+    port: 2222
+    exposedPort: 2222
+    expose:
+      default: true
+    nodePort: 30022
+    protocol: TCP
 
 logs:
   general:

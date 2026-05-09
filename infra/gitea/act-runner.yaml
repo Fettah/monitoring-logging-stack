@@ -1,0 +1,71 @@
+# Gitea Act Runner — provides GitHub Actions-compatible CI inside the cluster
+# The runner registers itself to the Gitea instance on startup.
+#
+# Prerequisites:
+#   1. Gitea is running and accessible at http://gitea-http.gitea.svc.cluster.local:3000
+#   2. Create a runner registration token in Gitea:
+#      Site Admin → Management → Runners → Create new runner
+#   3. Seal the token via: kubeseal ... (replace the Secret below with a SealedSecret)
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: act-runner-token
+  namespace: gitea
+type: Opaque
+stringData:
+  # Replace with actual token from Gitea Admin UI, then seal with kubeseal
+  GITEA_RUNNER_REGISTRATION_TOKEN: "REPLACE_WITH_GITEA_RUNNER_TOKEN"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: act-runner
+  namespace: gitea
+  labels:
+    app: act-runner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: act-runner
+  template:
+    metadata:
+      labels:
+        app: act-runner
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: act-runner
+          image: gitea/act_runner:nightly
+          env:
+            - name: GITEA_INSTANCE_URL
+              value: "http://gitea-http.gitea.svc.cluster.local:3000"
+            - name: GITEA_RUNNER_REGISTRATION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: act-runner-token
+                  key: GITEA_RUNNER_REGISTRATION_TOKEN
+            - name: GITEA_RUNNER_NAME
+              value: "kind-runner"
+            - name: GITEA_RUNNER_LABELS
+              value: "ubuntu-latest:docker://node:20-bullseye,ubuntu-22.04:docker://node:20-bullseye"
+          volumeMounts:
+            - name: runner-data
+              mountPath: /data
+            # Docker socket for running container jobs
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: runner-data
+          emptyDir: {}
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket

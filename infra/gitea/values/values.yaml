@@ -1,0 +1,102 @@
+# Gitea values — optimized for kind (single-node personal cluster)
+
+gitea:
+  admin:
+    username: admin
+    # Change via SealedSecret after bootstrap — this is the initial value
+    password: "Ch@ngeMe123!"
+    email: "admin@gitea.local"
+
+  config:
+    server:
+      DOMAIN: gitea.local
+      ROOT_URL: https://gitea.local
+      SSH_DOMAIN: gitea.local
+      SSH_PORT: 2222
+      SSH_LISTEN_PORT: 2222
+      LFS_START_SERVER: true
+    repository:
+      DEFAULT_PRIVATE: false
+    security:
+      INSTALL_LOCK: true
+    service:
+      DISABLE_REGISTRATION: false  # set to true after creating your user
+    # Enable built-in metrics for Prometheus scraping
+    metrics:
+      ENABLED: true
+      TOKEN: ""
+    # Gitea Actions (GitHub Actions-compatible CI)
+    actions:
+      ENABLED: true
+      DEFAULT_ACTIONS_URL: https://gitea.local
+
+persistence:
+  enabled: true
+  storageClass: ""  # uses default StorageClass
+  size: 10Gi
+  accessModes:
+    - ReadWriteOnce
+
+# Use ClusterIP for HTTP — Traefik IngressRoute handles external access
+service:
+  http:
+    type: ClusterIP
+    port: 3000
+    annotations: {}
+  ssh:
+    type: NodePort
+    port: 22
+    nodePort: 30022
+    annotations: {}
+
+# Disable built-in ingress — using Traefik IngressRoute
+ingress:
+  enabled: false
+
+# Bundled PostgreSQL (lightweight for personal use)
+postgresql-ha:
+  enabled: false
+
+postgresql:
+  enabled: true
+  global:
+    postgresql:
+      auth:
+        password: "gitea-pg-pass"
+        database: gitea
+        username: gitea
+  primary:
+    persistence:
+      size: 5Gi
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+
+# Bundled Redis (standalone — no cluster needed)
+redis-cluster:
+  enabled: false
+
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    persistence:
+      size: 1Gi
+    resources:
+      requests:
+        memory: 64Mi
+        cpu: 50m
+      limits:
+        memory: 128Mi
+
+resources:
+  requests:
+    memory: 256Mi
+    cpu: 100m
+  limits:
+    memory: 512Mi

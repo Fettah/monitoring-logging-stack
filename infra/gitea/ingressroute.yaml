@@ -1,0 +1,87 @@
+# HTTP → HTTPS redirect
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-https
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: gitea
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
+# TLS certificate for gitea.local (issued by local-ca-issuer)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: gitea-tls
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: gitea
+spec:
+  secretName: gitea-tls-secret
+  issuerRef:
+    name: local-ca-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - gitea.local
+  duration: 8760h   # 1 year
+  renewBefore: 720h # renew 30d before expiry
+---
+# HTTPS IngressRoute
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: gitea-https
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: gitea
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`gitea.local`)
+      kind: Rule
+      services:
+        - name: gitea-http
+          port: 3000
+  tls:
+    secretName: gitea-tls-secret
+---
+# HTTP IngressRoute (redirects to HTTPS)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: gitea-http
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: gitea
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`gitea.local`)
+      kind: Rule
+      middlewares:
+        - name: redirect-to-https
+      services:
+        - name: gitea-http
+          port: 3000
+---
+# TCP IngressRoute for Gitea SSH (passthrough on entrypoint 'ssh')
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: gitea-ssh
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: gitea
+spec:
+  entryPoints:
+    - ssh
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: gitea-ssh
+          port: 22

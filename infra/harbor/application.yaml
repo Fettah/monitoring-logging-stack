@@ -1,37 +1,32 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kube-prometheus-stack
+  name: harbor
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: '3'
-  labels:
-    release: kube-prometheus-stack
+    argocd.argoproj.io/sync-wave: '4'
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
-  destination:
-    name: in-cluster
-    namespace: monitoring
   project: default
   sources:
-    - repoURL: 'https://prometheus-community.github.io/helm-charts'
-      chart: kube-prometheus-stack
-      targetRevision: 70.3.0
+    - chart: harbor
+      repoURL: https://helm.goharbor.io
+      targetRevision: 1.16.0
       helm:
-        skipCrds: true
-        releaseName: kps
+        releaseName: harbor
         valueFiles:
-          - $values/infra/prometheus/values/values.yaml
+          - $values/infra/harbor/values/values.yaml
     - repoURL: https://github.com/Fettah/monitoring-logging-stack.git
       targetRevision: main
       ref: values
+  destination:
+    namespace: harbor
+    name: in-cluster
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
-      - RespectIgnoreDifferences=true
     automated:
       prune: true
       selfHeal: true
-

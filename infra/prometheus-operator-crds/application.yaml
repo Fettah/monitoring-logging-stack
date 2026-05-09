@@ -10,12 +10,12 @@ metadata:
 spec:
   destination:
     name: in-cluster
-    namespace: argocd
+    namespace: monitoring
   project: default
   source:
     repoURL: https://github.com/prometheus-community/helm-charts.git
     path: charts/kube-prometheus-stack/charts/crds/crds
-    targetRevision: kube-prometheus-stack-66.2.2
+    targetRevision: kube-prometheus-stack-70.3.0
     directory:
       recurse: true
   syncPolicy:

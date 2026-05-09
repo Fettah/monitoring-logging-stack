@@ -1,0 +1,69 @@
+# TLS Certificate for harbor.local
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harbor-tls
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: harbor
+spec:
+  secretName: harbor-tls-secret
+  issuerRef:
+    name: local-ca-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - harbor.local
+  duration: 8760h
+  renewBefore: 720h
+---
+# Harbor portal + API IngressRoute (HTTPS)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: harbor
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: harbor
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`harbor.local`)
+      kind: Rule
+      services:
+        - name: harbor
+          port: 80
+  tls:
+    secretName: harbor-tls-secret
+---
+# HTTP → HTTPS redirect for Harbor
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-https
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: harbor
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: harbor-http
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: harbor
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`harbor.local`)
+      kind: Rule
+      middlewares:
+        - name: redirect-to-https
+      services:
+        - name: harbor
+          port: 80

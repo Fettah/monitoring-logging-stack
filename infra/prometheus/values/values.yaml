@@ -1,0 +1,155 @@
+# kube-prometheus-stack values — release name: kps
+# Services: kps-grafana, kps-kube-prometheus-stack-prometheus, kps-kube-prometheus-stack-alertmanager
+
+# ── Grafana ──────────────────────────────────────────────────────────────────
+grafana:
+  enabled: true
+  fullnameOverride: grafana  # service will be named 'grafana' in namespace 'monitoring'
+  adminPassword: "Ch@ngeMe123!"  # replace with SealedSecret
+  grafana.ini:
+    server:
+      root_url: https://grafana.local
+      domain: grafana.local
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://kps-kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+          access: proxy
+          isDefault: true
+        - name: Loki
+          type: loki
+          url: http://loki.monitoring.svc.cluster.local:3100
+          access: proxy
+          isDefault: false
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: default
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+  dashboards:
+    default:
+      argocd:
+        gnetId: 14584
+        revision: 1
+        datasource: Prometheus
+      traefik:
+        gnetId: 17346
+        revision: 9
+        datasource: Prometheus
+      gitea:
+        gnetId: 17884
+        revision: 1
+        datasource: Prometheus
+      kubernetes-cluster:
+        gnetId: 7249
+        revision: 1
+        datasource: Prometheus
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+  ingress:
+    enabled: false  # using Traefik IngressRoute
+
+# ── Prometheus ────────────────────────────────────────────────────────────────
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 20Gi
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 200m
+      limits:
+        memory: 1Gi
+    # Scrape all PodMonitor/ServiceMonitor resources across namespaces
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    # Additional scrape configs for services without ServiceMonitor CRDs
+    additionalScrapeConfigs:
+      - job_name: 'gitea'
+        static_configs:
+          - targets: ['gitea-http.gitea.svc.cluster.local:3000']
+        metrics_path: /metrics
+      - job_name: 'harbor'
+        static_configs:
+          - targets: ['harbor-core.harbor.svc.cluster.local:8080']
+        metrics_path: /metrics
+
+# ── AlertManager ─────────────────────────────────────────────────────────────
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    resources:
+      requests:
+        memory: 64Mi
+        cpu: 50m
+      limits:
+        memory: 128Mi
+
+# ── Prometheus Operator ───────────────────────────────────────────────────────
+prometheusOperator:
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+
+# ── Node Exporter ─────────────────────────────────────────────────────────────
+prometheus-node-exporter:
+  enabled: true
+  resources:
+    requests:
+      memory: 32Mi
+      cpu: 10m
+    limits:
+      memory: 64Mi
+
+# ── Kube State Metrics ────────────────────────────────────────────────────────
+kube-state-metrics:
+  enabled: true
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 10m
+
+# ── Additional Alert Rules ────────────────────────────────────────────────────
+additionalPrometheusRulesMap:
+  kind-cluster-alerts:
+    groups:
+      - name: cluster-health
+        rules:
+          - alert: HighCPUUsage
+            expr: 100 - avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance) > 80
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High CPU usage on {{ $labels.instance }}"
+          - alert: HighMemoryUsage
+            expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 85
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High memory usage on {{ $labels.instance }}"

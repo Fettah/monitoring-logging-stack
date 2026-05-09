@@ -3,12 +3,30 @@ kind: Application
 metadata:
   name: loki
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '3'
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://registry-1.docker.io/bitnamicharts # https://grafana.github.io/helm-charts
-    chart: grafana-loki
-    targetRevision: 4.7.0
+  sources:
+    - chart: loki
+      repoURL: https://grafana.github.io/helm-charts
+      targetRevision: 6.28.0
+      helm:
+        releaseName: loki
+        valueFiles:
+          - $values/infra/loki/values/values.yaml
+    - repoURL: https://github.com/Fettah/monitoring-logging-stack.git
+      targetRevision: main
+      ref: values
   destination:
     name: in-cluster
-    namespace: argocd
+    namespace: monitoring
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,113 @@
+# TLS Certificate for grafana.local
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: grafana-tls
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: monitoring
+spec:
+  secretName: grafana-tls-secret
+  issuerRef:
+    name: local-ca-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - grafana.local
+  duration: 8760h
+  renewBefore: 720h
+---
+# TLS Certificate for prometheus.local
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: prometheus-tls
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: monitoring
+spec:
+  secretName: prometheus-tls-secret
+  issuerRef:
+    name: local-ca-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - prometheus.local
+  duration: 8760h
+  renewBefore: 720h
+---
+# Grafana HTTPS IngressRoute
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: grafana
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: monitoring
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`grafana.local`)
+      kind: Rule
+      services:
+        # fullnameOverride: grafana → service is just "grafana"
+        - name: grafana
+          port: 80
+  tls:
+    secretName: grafana-tls-secret
+---
+# Prometheus HTTPS IngressRoute
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: prometheus
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: monitoring
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`prometheus.local`)
+      kind: Rule
+      services:
+        - name: kps-kube-prometheus-stack-prometheus
+          port: 9090
+  tls:
+    secretName: prometheus-tls-secret
+---
+# AlertManager HTTPS IngressRoute
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: alertmanager-tls
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: monitoring
+spec:
+  secretName: alertmanager-tls-secret
+  issuerRef:
+    name: local-ca-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - alertmanager.local
+  duration: 8760h
+  renewBefore: 720h
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: alertmanager
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: monitoring
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`alertmanager.local`)
+      kind: Rule
+      services:
+        - name: kps-kube-prometheus-stack-alertmanager
+          port: 9093
+  tls:
+    secretName: alertmanager-tls-secret

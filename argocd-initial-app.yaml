@@ -13,6 +13,9 @@ spec:
     repoURL: https://github.com/Fettah/monitoring-logging-stack/
     targetRevision: main
   syncPolicy:
+    syncOptions:
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
     automated:
       prune: true
       selfHeal: true

@@ -1,0 +1,122 @@
+# Harbor values — personal kind cluster setup
+# Uses MinIO as the blob storage backend (activate in Phase 3)
+# Until then uses PVC-based local storage
+
+expose:
+  type: clusterIP  # Traefik IngressRoute handles external access
+  tls:
+    enabled: false  # TLS terminated at Traefik; internal is HTTP
+  clusterIP:
+    name: harbor
+    ports:
+      httpPort: 80
+      httpsPort: 443
+
+# External URL used by Harbor for redirect URIs
+externalURL: https://harbor.local
+
+# Harbor admin password — replace with SealedSecret
+harborAdminPassword: "Ch@ngeMe123!"
+
+# Disable bundled ingress — using Traefik
+ingress:
+  enabled: false
+
+# Persistence — local PVC initially, can switch to MinIO S3
+persistence:
+  enabled: true
+  resourcePolicy: "keep"
+  persistentVolumeClaim:
+    registry:
+      size: 20Gi
+    chartmuseum:
+      size: 5Gi
+    jobservice:
+      jobLog:
+        size: 1Gi
+    database:
+      size: 5Gi
+    redis:
+      size: 1Gi
+    trivy:
+      size: 5Gi
+
+  # --- MinIO S3 backend (activate in Phase 3) ---
+  # imageChartStorage:
+  #   disableredirect: true
+  #   type: s3
+  #   s3:
+  #     accesskey: minioadmin
+  #     secretkey: Ch@ngeMe123!
+  #     bucket: harbor
+  #     region: us-east-1
+  #     regionendpoint: http://minio.minio-operator.svc.cluster.local
+  #     secure: false
+  #     v4auth: true
+  #     chunksize: "5242880"
+  #     encrypt: false
+
+# Resource requests
+core:
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+
+jobservice:
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+
+registry:
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+
+trivy:
+  enabled: true  # vulnerability scanning
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+
+notary:
+  enabled: false  # not needed for personal use
+
+database:
+  type: internal  # bundled PostgreSQL
+  internal:
+    password: "harbor-db-pass"  # replace with SealedSecret
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+
+redis:
+  type: internal  # bundled Redis
+  internal:
+    resources:
+      requests:
+        memory: 64Mi
+        cpu: 50m
+      limits:
+        memory: 128Mi
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    additionalLabels:
+      release: kps  # matches Prometheus serviceMonitorSelector

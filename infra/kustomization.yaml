@@ -2,24 +2,40 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  # Logging & Monitoring
-  # - prometheus-operator-crds/application.yaml
-  # - prometheus/application.yaml
-  # - loki/application.yaml
-  # - prometheus-node-exporter/application.yaml
-  # - grafana/dashboards/argo-cd.yaml
-  # Secrets
-  # - sealed-secrets/application.yaml
-  # queue
+  # ── Wave 1: Infrastructure foundations ───────────────────────────────────────
+  - cert-manager/application.yaml
+  - cert-manager/cluster-issuer.yaml
+  - sealed-secrets/application.yaml
+
+  # ── Wave 2: Git server (core of self-hosted stack) ────────────────────────────
+  - gitea/namespace.yaml
+  - gitea/application.yaml
+  - gitea/ingressroute.yaml
+  # - gitea/act-runner.yaml  # Disabled for now: requires DinD configuration on kind
+
+  # ── Wave 3: Observability ─────────────────────────────────────────────────────
+  - prometheus-operator-crds/application.yaml
+  - prometheus/namespace.yaml
+  - prometheus/application.yaml
+  - prometheus/ingressroute.yaml
+  - loki/application.yaml
+
+  # ── Wave 4: Storage + Registry ────────────────────────────────────────────────
+  - harbor/namespace.yaml
+  - minio/application.yaml
+  - minio/tenant.yaml
+  - minio/ingressroute.yaml
+  - harbor/application.yaml
+  - harbor/ingressroute.yaml
+
+  # ── Wave 5: Existing apps ─────────────────────────────────────────────────────
+  # - traefik/application.yaml  # ⚠️ Disabled pending confirmation on IngressRoutes
   - rabbit-mq/application.yaml
   - rabbit-mq/job.yaml
   - rabbit-mq/rabbitmq-credentials.yaml
   - rabbit-mq/rabbitmq-definitions.yaml
-  # Backup
-  # - velero/application.yaml
+
+  # ── Disabled / optional ───────────────────────────────────────────────────────
+  # - gitlab/application.yaml          # replaced by Gitea
+  # - velero/application.yaml          # enable when MinIO is stable
   # - velero/backup-argocd.yaml
-  # - minio/application.yaml
-  - traefik/application.yaml
-  - nginx/application.yaml
-  - httpbin/application.yaml
-  - gitlab/application.yaml

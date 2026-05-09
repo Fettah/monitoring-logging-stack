@@ -1,0 +1,83 @@
+# MinIO Tenant — single-node, provides S3 buckets for Loki, Harbor, Velero
+# Requires MinIO Operator (infra/minio/application.yaml) to be running first.
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  name: minio
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: minio-operator
+  labels:
+    app: minio
+spec:
+  image: minio/minio:RELEASE.2024-11-07T00-52-20Z
+  imagePullPolicy: IfNotPresent
+
+  # Single pool — single node for local usage
+  pools:
+    - name: pool-0
+      servers: 1
+      volumesPerServer: 1
+      volumeClaimTemplate:
+        apiVersion: v1
+        kind: persistentvolumeclaims
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 20Gi
+      resources:
+        requests:
+          memory: 256Mi
+          cpu: 100m
+        limits:
+          memory: 512Mi
+
+  # Buckets created on startup
+  buckets:
+    - name: loki
+    - name: harbor
+    - name: velero
+
+  # Users (credentials)
+  users:
+    - name: minio-user-secret  # references the Secret below
+
+  # Expose via service (ClusterIP — Traefik routes externally)
+  requestAutoCert: false
+
+  features:
+    bucketDNS: false
+
+  # Console (web UI)
+  console:
+    image: minio/console:v0.41.0
+    replicas: 1
+---
+# MinIO root credentials secret
+# REPLACE with SealedSecret after sealed-secrets is running
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-env-configuration
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: minio-operator
+type: Opaque
+stringData:
+  config.env: |-
+    export MINIO_ROOT_USER="minioadmin"
+    export MINIO_ROOT_PASSWORD="Ch@ngeMe123!"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-user-secret
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  namespace: minio-operator
+type: Opaque
+stringData:
+  CONSOLE_ACCESS_KEY: "minioadmin"
+  CONSOLE_SECRET_KEY: "Ch@ngeMe123!"
