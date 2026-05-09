@@ -10,7 +10,7 @@ spec:
   project: default
   source:
     path: apps/
-    repoURL: https://github.com/Fettah/monitoring-logging-stack/
+    repoURL: http://gitea-http.gitea.svc.cluster.local:3000/abdel/monitoring-logging-stack.git
     targetRevision: main
   syncPolicy:
     syncOptions:

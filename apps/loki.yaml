@@ -15,7 +15,7 @@ spec:
         releaseName: loki
         valueFiles:
           - $values/infra/loki/values/values.yaml
-    - repoURL: https://github.com/Fettah/monitoring-logging-stack.git
+    - repoURL: http://gitea-http.gitea.svc.cluster.local:3000/abdel/monitoring-logging-stack.git
       targetRevision: main
       ref: values
   destination:
