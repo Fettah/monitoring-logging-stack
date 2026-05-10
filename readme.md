@@ -1,4 +1,4 @@
-# atu-playground — Self-Hosted Air-Gapped GitOps Stack
+# abdel-playground — Self-Hosted Air-Gapped GitOps Stack
 
 This repository contains a fully automated, self-hosted GitOps infrastructure built for a local `kind` cluster. It uses the **App-of-Apps** pattern with ArgoCD to deploy Gitea, Prometheus, Grafana, Loki, Harbor, Traefik, and MinIO.
 
@@ -14,10 +14,10 @@ Once fully deployed, the cluster becomes completely "air-gapped" and self-sustai
 Create the local Kubernetes cluster with port mappings for Traefik (80/443) and Gitea SSH (2222).
 ```bash
 # Delete the existing cluster if you are starting fresh
-kind delete cluster --name atu-playground
+kind delete cluster --name abdel-playground
 
 # Create the new cluster
-kind create cluster --name atu-playground --config kind-config.yaml
+kind create cluster --name abdel-playground --config kind-config.yaml
 ```
 
 ## 2. Install ArgoCD
@@ -48,7 +48,7 @@ kubectl apply -f parent-app.yaml
 Route your local `.local` domains to your `kind` cluster (which listens on localhost via Traefik).
 ```bash
 sudo tee -a /etc/hosts <<'EOF'
-# atu-playground kind cluster
+# abdel-playground kind cluster
 127.0.0.1  gitea.local
 127.0.0.1  argocd.local
 127.0.0.1  grafana.local

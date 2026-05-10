@@ -6,6 +6,8 @@ grafana:
   enabled: true
   fullnameOverride: grafana  # service will be named 'grafana' in namespace 'monitoring'
   adminPassword: "Ch@ngeMe123!"  # replace with SealedSecret
+  image:
+    tag: "latest"
   grafana.ini:
     server:
       root_url: https://grafana.local

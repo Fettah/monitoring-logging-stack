@@ -19,7 +19,7 @@ spec:
   duration: 87600h  # 10 years
   subject:
     organizations:
-      - atu-playground
+      - abdel-playground
   privateKey:
     algorithm: ECDSA
     size: 256
