@@ -18,7 +18,7 @@ spec:
         valueFiles:
           - $values/infra/traefik/values/values.yaml
     # Git repo source for values files (referenced as $values)
-    - repoURL: http://gitea-http.gitea.svc.cluster.local:3000/abdel/monitoring-logging-stack.git
+    - repoURL: https://github.com/Fettah/monitoring-logging-stack.git
       targetRevision: main
       ref: values
   project: default
