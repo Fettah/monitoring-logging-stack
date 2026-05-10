@@ -1,42 +1,51 @@
-# atu-playground — Self-Hosted GitOps on kind
+# atu-playground — Self-Hosted Air-Gapped GitOps Stack
+
+This repository contains a fully automated, self-hosted GitOps infrastructure built for a local `kind` cluster. It uses the **App-of-Apps** pattern with ArgoCD to deploy Gitea, Prometheus, Grafana, Loki, Harbor, Traefik, and MinIO.
+
+Once fully deployed, the cluster becomes completely "air-gapped" and self-sustaining by pulling its own configurations directly from the internal Gitea instance!
 
 ## Prerequisites
 - Docker Desktop (≥ 8 GB RAM allocated)
-- `kind`, `kubectl`, `helm`, `kubeseal` installed
+- `kind`, `kubectl`, `helm`, `kubeseal`, and `git` installed
 
 ---
 
-## 1. Create the cluster
-> ⚠️ `extraPortMappings` require recreating if the cluster already exists.
+## 1. Create the Cluster
+Create the local Kubernetes cluster with port mappings for Traefik (80/443) and Gitea SSH (2222).
 ```bash
-kind delete cluster --name atu-playground  # if exists
+# Delete the existing cluster if you are starting fresh
+kind delete cluster --name atu-playground
+
+# Create the new cluster
 kind create cluster --name atu-playground --config kind-config.yaml
 ```
 
-## 2. Bootstrap ArgoCD
+## 2. Install ArgoCD
 ```bash
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 # Wait for ArgoCD to be ready
 kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=120s
-
-# Get initial admin password
-kubectl get secret argocd-initial-admin-secret -n argocd \
-  -o jsonpath='{.data.password}' | base64 --decode && echo ""
-
-# Access ArgoCD UI
-kubectl port-forward svc/argocd-server 4000:80 -n argocd
-# → http://localhost:4000
 ```
 
-## 3. Apply the App-of-Apps root
+## 3. The "Chicken-and-Egg" Bootstrap
+Because this is an air-gapped setup, the final ArgoCD manifests point to the internal Gitea URL (`http://gitea-http.gitea.svc.cluster.local:3000/...`). However, since Gitea isn't running yet on a fresh cluster, you must temporarily bootstrap from your GitHub repository first.
+
+**Step A:** Temporarily point the manifests to GitHub:
 ```bash
-kubectl apply -f argocd-initial-app.yaml
+# Run this simple python script to swap the URLs back to GitHub
+python3 -c 'import glob; [open(f, "w").write(open(f).read().replace("http://gitea-http.gitea.svc.cluster.local:3000/abdel/monitoring-logging-stack.git", "https://github.com/Fettah/monitoring-logging-stack.git")) for f in glob.glob("apps/*.yaml") + ["parent-app.yaml"]]'
 ```
-This triggers ArgoCD to sync all apps in `infra/` via kustomization.
 
-## 4. /etc/hosts — add *.local domain entries
+**Step B:** Apply the root application:
+```bash
+kubectl apply -f parent-app.yaml
+```
+*ArgoCD will now spin up your entire infrastructure (Gitea, Grafana, Harbor, etc.) by pulling from GitHub.*
+
+## 4. Local DNS (/etc/hosts)
+Route your local `.local` domains to your `kind` cluster (which listens on localhost via Traefik).
 ```bash
 sudo tee -a /etc/hosts <<'EOF'
 # atu-playground kind cluster
@@ -48,76 +57,44 @@ sudo tee -a /etc/hosts <<'EOF'
 127.0.0.1  harbor.local
 127.0.0.1  minio.local
 127.0.0.1  minio-api.local
-127.0.0.1  nginx.local
 127.0.0.1  traefik.local
 EOF
 ```
 
-## 5. Trust the self-signed CA (remove browser warnings)
-```bash
-# Export CA cert after cert-manager creates it
-kubectl get secret local-ca-secret -n cert-manager \
-  -o jsonpath='{.data.tls\.crt}' | base64 -d > local-ca.crt
+## 5. Seal the Air-Gap (Pivot to Gitea)
+Once the `gitea` pod is fully running, you can sever the tie to GitHub and move the repo entirely inside the cluster!
 
-# macOS — add to keychain and trust
-sudo security add-trusted-cert -d -r trustRoot \
-  -k /Library/Keychains/System.keychain local-ca.crt
+1. Open `https://gitea.local` and log in with `gitea_admin` / `Ch@ngeMe123!`.
+2. Create an empty repository named `monitoring-logging-stack` under a new user `abdel`.
+3. In your terminal, swap the URLs back to the internal Gitea service:
+```bash
+python3 -c 'import glob; [open(f, "w").write(open(f).read().replace("https://github.com/Fettah/monitoring-logging-stack.git", "http://gitea-http.gitea.svc.cluster.local:3000/abdel/monitoring-logging-stack.git")) for f in glob.glob("apps/*.yaml") + ["parent-app.yaml"]]'
 ```
+4. Push the repository to Gitea (bypassing the local self-signed cert warning):
+```bash
+git config http.sslVerify false
+git add .
+git commit -m "chore: pivot back to internal gitea"
+git push -u https://gitea.local/abdel/monitoring-logging-stack.git main
+```
+5. Tell ArgoCD to look at the new internal source:
+```bash
+kubectl apply -f parent-app.yaml
+```
+**Mission Accomplished!** Your cluster is now 100% self-hosted and reading from its own internal Git server.
 
 ---
 
-## Service URLs (after cluster is up)
+## Service URLs & Default Credentials
 
 | Service       | URL                          | Default Credentials         |
 |---------------|------------------------------|-----------------------------|
-| ArgoCD        | http://localhost:4000        | admin / (see step 2)        |
-| Gitea         | https://gitea.local          | admin / Ch@ngeMe123!        |
+| Gitea         | https://gitea.local          | gitea_admin / Ch@ngeMe123!  |
 | Grafana       | https://grafana.local        | admin / Ch@ngeMe123!        |
 | Prometheus    | https://prometheus.local     | —                           |
 | AlertManager  | https://alertmanager.local   | —                           |
 | Harbor        | https://harbor.local         | admin / Ch@ngeMe123!        |
 | MinIO Console | https://minio.local          | minioadmin / Ch@ngeMe123!   |
-| Traefik       | http://localhost:4000 (via port-forward) | —              |
+| Traefik       | https://traefik.local        | —                           |
 
-> ⚠️ Change all default passwords immediately after first login!
-
----
-
-## Phase 6 — Migrate ArgoCD from GitHub → Gitea
-
-Once Gitea is running:
-
-```bash
-# 1. Create repo in Gitea UI: https://gitea.local/admin/monitoring-logging-stack
-
-# 2. Push this repo to Gitea
-git remote add gitea https://gitea.local/admin/monitoring-logging-stack.git
-git push gitea main
-
-# 3. Generate Gitea access token (UI: User Settings → Applications)
-# 4. Update the repo secret
-kubectl apply -f infra/argocd/gitea-repo-secret.yaml  # after filling the token
-
-# 5. Update argocd-initial-app.yaml repoURL to:
-#    http://gitea-http.gitea.svc.cluster.local:3000/admin/monitoring-logging-stack.git
-
-# 6. Update all application.yaml files that reference github.com
-#    (traefik, nginx, gitea itself, prometheus, loki, harbor)
-#    Change: repoURL: https://github.com/Fettah/monitoring-logging-stack.git
-#    To:     repoURL: http://gitea-http.gitea.svc.cluster.local:3000/admin/monitoring-logging-stack.git
-
-# 7. Commit + push → ArgoCD now self-manages from Gitea!
-```
-
-## Gitea SSH (optional)
-```bash
-# Clone via SSH (port 2222 mapped to NodePort 30022)
-git clone ssh://git@gitea.local:2222/admin/monitoring-logging-stack.git
-```
-
-## Seal a secret
-```bash
-# After sealed-secrets controller is running:
-kubeseal --controller-namespace sealed-secrets \
-  --format yaml < plain-secret.yaml > sealed-secret.yaml
-```
+> ⚠️ **Note:** Your browser will show a "Not Secure" warning for these `.local` domains because Cert-Manager generates a self-signed development certificate. Simply click "Advanced -> Proceed" to access them.
