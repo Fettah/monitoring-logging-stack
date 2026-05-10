@@ -13,6 +13,9 @@ resources:
   # Gitea Raw Config
   - gitea/ingressroute.yaml
 
+  # ArgoCD Raw Config
+  - argocd/ingressroute.yaml
+
   # Observability Raw Config
   - prometheus/ingressroute.yaml
 

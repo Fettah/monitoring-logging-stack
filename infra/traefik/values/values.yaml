@@ -76,6 +76,7 @@ service:
 additionalArguments:
   - '--api.insecure=true'
   - '--providers.kubernetescrd.allowcrossnamespace=true'
+  - '--serverstransport.insecureSkipVerify=true'
 
 extraObjects:
   - apiVersion: rbac.authorization.k8s.io/v1
