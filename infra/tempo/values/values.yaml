@@ -1,0 +1,39 @@
+# Tempo Monolithic Configuration for abdel-playground
+tempo:
+  repository: grafana/tempo
+  tag: 2.9.0
+  
+  # Single binary mode
+  multitenancyEnabled: false
+  
+  # Storage configuration
+  storage:
+    trace:
+      backend: s3
+      s3:
+        bucket: tempo
+        endpoint: minio.minio-operator.svc.cluster.local:9000
+        access_key: minioadmin
+        secret_key: Ch@ngeMe123!
+        insecure: true
+  
+  # Enable receivers
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+# Gateway (NGINX) for external access if needed (not needed for internal tracing)
+gateway:
+  enabled: false
+
+# Resource requests for the kind cluster
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi

@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tempo
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - chart: tempo
+      repoURL: https://grafana.github.io/helm-charts
+      targetRevision: 1.24.4
+      helm:
+        releaseName: tempo
+        valueFiles:
+          - $values/infra/tempo/values/values.yaml
+    - repoURL: http://gitea-http.gitea.svc.cluster.local:3000/abdel/monitoring-logging-stack.git
+      targetRevision: main
+      ref: values
+  destination:
+    name: in-cluster
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

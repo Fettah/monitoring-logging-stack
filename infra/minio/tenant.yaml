@@ -37,6 +37,7 @@ spec:
     - name: loki
     - name: harbor
     - name: velero
+    - name: tempo
 
   # Users (credentials)
   users:

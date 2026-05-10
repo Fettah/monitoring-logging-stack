@@ -1,0 +1,437 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    goldilocks.fairwinds.com/enabled: "true"
+  name: gitea
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: harbor
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-env-configuration
+  namespace: minio-operator
+stringData:
+  config.env: |-
+    export MINIO_ROOT_USER="minioadmin"
+    export MINIO_ROOT_PASSWORD="Ch@ngeMe123!"
+type: Opaque
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-user-secret
+  namespace: minio-operator
+stringData:
+  CONSOLE_ACCESS_KEY: minioadmin
+  CONSOLE_SECRET_KEY: Ch@ngeMe123!
+type: Opaque
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: local-ca-cert
+  namespace: cert-manager
+spec:
+  commonName: local-ca
+  duration: 87600h
+  isCA: true
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: selfsigned-issuer
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  secretName: local-ca-secret
+  subject:
+    organizations:
+    - abdel-playground
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: gitea-tls
+  namespace: gitea
+spec:
+  dnsNames:
+  - gitea.local
+  duration: 8760h
+  issuerRef:
+    kind: ClusterIssuer
+    name: local-ca-issuer
+  renewBefore: 720h
+  secretName: gitea-tls-secret
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harbor-tls
+  namespace: harbor
+spec:
+  dnsNames:
+  - harbor.local
+  duration: 8760h
+  issuerRef:
+    kind: ClusterIssuer
+    name: local-ca-issuer
+  renewBefore: 720h
+  secretName: harbor-tls-secret
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: minio-api-tls
+  namespace: minio-operator
+spec:
+  dnsNames:
+  - minio-api.local
+  duration: 8760h
+  issuerRef:
+    kind: ClusterIssuer
+    name: local-ca-issuer
+  renewBefore: 720h
+  secretName: minio-api-tls-secret
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: minio-tls
+  namespace: minio-operator
+spec:
+  dnsNames:
+  - minio.local
+  duration: 8760h
+  issuerRef:
+    kind: ClusterIssuer
+    name: local-ca-issuer
+  renewBefore: 720h
+  secretName: minio-tls-secret
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: alertmanager-tls
+  namespace: monitoring
+spec:
+  dnsNames:
+  - alertmanager.local
+  duration: 8760h
+  issuerRef:
+    kind: ClusterIssuer
+    name: local-ca-issuer
+  renewBefore: 720h
+  secretName: alertmanager-tls-secret
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: grafana-tls
+  namespace: monitoring
+spec:
+  dnsNames:
+  - grafana.local
+  duration: 8760h
+  issuerRef:
+    kind: ClusterIssuer
+    name: local-ca-issuer
+  renewBefore: 720h
+  secretName: grafana-tls-secret
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: prometheus-tls
+  namespace: monitoring
+spec:
+  dnsNames:
+  - prometheus.local
+  duration: 8760h
+  issuerRef:
+    kind: ClusterIssuer
+    name: local-ca-issuer
+  renewBefore: 720h
+  secretName: prometheus-tls-secret
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: local-ca-issuer
+spec:
+  ca:
+    secretName: local-ca-secret
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+---
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  labels:
+    app: minio
+  name: minio
+  namespace: minio-operator
+spec:
+  buckets:
+  - name: loki
+  - name: harbor
+  - name: velero
+  features:
+    bucketDNS: false
+  image: minio/minio:RELEASE.2024-11-07T00-52-20Z
+  imagePullPolicy: IfNotPresent
+  pools:
+  - name: pool-0
+    resources:
+      limits:
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+    servers: 1
+    volumeClaimTemplate:
+      apiVersion: v1
+      kind: persistentvolumeclaims
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 20Gi
+    volumesPerServer: 1
+  requestAutoCert: false
+  users:
+  - name: minio-user-secret
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: argocd-server
+  namespace: argocd
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`argocd.local`)
+    services:
+    - name: argocd-server
+      port: 443
+      scheme: https
+  tls:
+    secretName: local-tls-secret
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: argocd-server-http
+  namespace: argocd
+spec:
+  entryPoints:
+  - web
+  routes:
+  - kind: Rule
+    match: Host(`argocd.local`)
+    services:
+    - name: argocd-server
+      port: 443
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: gitea-http
+  namespace: gitea
+spec:
+  entryPoints:
+  - web
+  routes:
+  - kind: Rule
+    match: Host(`gitea.local`)
+    middlewares:
+    - name: redirect-to-https
+    services:
+    - name: gitea-http
+      port: 3000
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: gitea-https
+  namespace: gitea
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`gitea.local`)
+    services:
+    - name: gitea-http
+      port: 3000
+  tls:
+    secretName: gitea-tls-secret
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: harbor
+  namespace: harbor
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`harbor.local`)
+    services:
+    - name: harbor
+      port: 80
+  tls:
+    secretName: harbor-tls-secret
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: harbor-http
+  namespace: harbor
+spec:
+  entryPoints:
+  - web
+  routes:
+  - kind: Rule
+    match: Host(`harbor.local`)
+    middlewares:
+    - name: redirect-to-https
+    services:
+    - name: harbor
+      port: 80
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: minio-api
+  namespace: minio-operator
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`minio-api.local`)
+    services:
+    - name: minio
+      port: 80
+  tls:
+    secretName: minio-api-tls-secret
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: minio-console
+  namespace: minio-operator
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`minio.local`)
+    services:
+    - name: minio-console
+      port: 9090
+  tls:
+    secretName: minio-tls-secret
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: alertmanager
+  namespace: monitoring
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`alertmanager.local`)
+    services:
+    - name: kps-kube-prometheus-stack-alertmanager
+      port: 9093
+  tls:
+    secretName: alertmanager-tls-secret
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`grafana.local`)
+    services:
+    - name: grafana
+      port: 80
+  tls:
+    secretName: grafana-tls-secret
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`prometheus.local`)
+    services:
+    - name: kps-kube-prometheus-stack-prometheus
+      port: 9090
+  tls:
+    secretName: prometheus-tls-secret
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: gitea-ssh
+  namespace: gitea
+spec:
+  entryPoints:
+  - ssh
+  routes:
+  - match: HostSNI(`*`)
+    services:
+    - name: gitea-ssh
+      port: 22
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-https
+  namespace: gitea
+spec:
+  redirectScheme:
+    permanent: true
+    scheme: https
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-https
+  namespace: harbor
+spec:
+  redirectScheme:
+    permanent: true
+    scheme: https

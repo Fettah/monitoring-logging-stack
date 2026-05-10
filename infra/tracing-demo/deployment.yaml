@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tracing-demo
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tracing-demo
+  template:
+    metadata:
+      labels:
+        app: tracing-demo
+    spec:
+      containers:
+      - name: generator
+        image: python:3.9-slim
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            pip install opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp
+            cat <<EOF > main.py
+            import time
+            import random
+            from opentelemetry import trace
+            from opentelemetry.sdk.trace import TracerProvider
+            from opentelemetry.sdk.trace.export import BatchSpanProcessor
+            from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+
+            # Configure OpenTelemetry
+            provider = TracerProvider()
+            processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="http://tempo.monitoring.svc.cluster.local:4317", insecure=True))
+            provider.add_span_processor(processor)
+            trace.set_tracer_provider(provider)
+            tracer = trace.get_tracer(__name__)
+
+            print("Starting trace generator...")
+            while True:
+                with tracer.start_as_current_span("main-operation") as span:
+                    span.set_attribute("app.language", "python")
+                    span.set_attribute("operation.id", random.randint(1, 1000))
+                    
+                    # Create sub-spans
+                    with tracer.start_as_current_span("sub-task-1"):
+                        time.sleep(random.uniform(0.1, 0.5))
+                        print(f"Executed sub-task 1. TraceID: {hex(span.get_span_context().trace_id)}")
+                        
+                    with tracer.start_as_current_span("sub-task-2"):
+                        time.sleep(random.uniform(0.2, 0.6))
+                        print(f"Executed sub-task 2. TraceID: {hex(span.get_span_context().trace_id)}")
+                
+                time.sleep(5)
+            EOF
+            python main.py

@@ -23,3 +23,4 @@ resources:
   - minio/tenant.yaml
   - minio/ingressroute.yaml
   - harbor/ingressroute.yaml
+  - tracing-demo/deployment.yaml
